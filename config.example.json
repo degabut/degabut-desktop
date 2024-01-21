@@ -1,0 +1,8 @@
+{
+  "clientId": "bot-client-id",
+  "baseUrl": "https://yourhost.com",
+  "update": {
+    "name": "github-name",
+    "repository": "github-repository"
+  }
+}

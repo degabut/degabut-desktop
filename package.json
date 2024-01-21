@@ -1,0 +1,45 @@
+{
+  "name": "degabut-desktop",
+  "private": true,
+  "version": "0.2.0",
+  "author": "Degabut",
+  "description": "Desktop Application for Degabut",
+  "main": "./dist/index.js",
+  "scripts": {
+    "watch": "tsc -w",
+    "lint": "eslint -c .eslintrc --ext .ts ./src",
+    "start": "yarn compile && nodemon --watch ./dist --exec \"electron ./dist/index.js\"",
+    "dev": "concurrently --kill-others \"yarn watch\" \"yarn start\"",
+    "forge:start": "electron-forge start",
+    "forge:package": "electron-forge package",
+    "forge:make": "electron-forge make",
+    "compile": "tsc && shx cp -r ./src/assets ./dist/assets && shx cp ./config.json ./dist",
+    "build": "yarn compile && yarn forge:make"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@electron-forge/cli": "^6.0.4",
+    "@electron-forge/maker-deb": "^6.0.4",
+    "@electron-forge/maker-rpm": "^6.0.4",
+    "@electron-forge/maker-squirrel": "^6.0.4",
+    "@electron-forge/maker-wix": "^6.0.4",
+    "@electron-forge/maker-zip": "^6.0.4",
+    "@types/discord-rpc": "^4.0.3",
+    "@typescript-eslint/eslint-plugin": "^6.9.1",
+    "@typescript-eslint/parser": "^6.9.1",
+    "concurrently": "^7.6.0",
+    "electron": "^22.0.0",
+    "eslint": "^7.32.0",
+    "nodemon": "^2.0.20",
+    "prettier": "^2.8.1",
+    "shx": "^0.3.4",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@discordapp/perceptual": "^1.1.0",
+    "axios": "^1.6.2",
+    "discord-rpc": "^4.0.1",
+    "electron-squirrel-startup": "^1.0.0",
+    "electron-store": "^8.1.0"
+  }
+}
