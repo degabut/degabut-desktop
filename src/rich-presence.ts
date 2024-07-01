@@ -1,6 +1,7 @@
-import { Client, Presence } from "discord-rpc";
-import { IPCListener, OnIpc, Process } from "./common";
+import { Client } from "discord-rpc";
+import { IPCListener, OnCommand, Process } from "./common";
 import { config } from "./config";
+import { IpcCommandData } from "./types";
 
 @IPCListener
 export class RichPresence extends Process {
@@ -29,13 +30,13 @@ export class RichPresence extends Process {
 		}
 	}
 
-	@OnIpc("set-activity")
-	setActivity(data: Presence) {
+	@OnCommand("set-activity")
+	setActivity(data: IpcCommandData<"set-activity">) {
 		if (!this.client?.user) return;
 		this.client?.setActivity(data);
 	}
 
-	@OnIpc("clear-activity")
+	@OnCommand("clear-activity")
 	onClearActivity() {
 		if (!this.client?.user) return;
 		this.client?.clearActivity();

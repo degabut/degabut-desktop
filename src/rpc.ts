@@ -1,8 +1,8 @@
 import { perceptualToAmplitude } from "@discordapp/perceptual";
 import { Client } from "discord-rpc";
 import Store from "electron-store";
-import { IPCListener, OnIpc, OnSettingsChange, Process } from "./common";
-import { Settings } from "./types";
+import { IPCListener, OnCommand, OnEvent, OnSettingsChange, Process } from "./common";
+import { IpcClientEventData, IpcCommandData } from "./types";
 
 @IPCListener
 export class RPC extends Process {
@@ -77,8 +77,8 @@ export class RPC extends Process {
 		}
 	}
 
-	@OnIpc("loaded")
-	async onLoaded(settings?: Settings) {
+	@OnEvent("ready")
+	async onLoaded(settings?: IpcClientEventData<"ready">) {
 		if (!settings || !settings["discord.rpc"]) return;
 
 		if (this.store.get("clientId") === settings["discord.rpcClientId"]) {
@@ -92,13 +92,13 @@ export class RPC extends Process {
 
 	@OnSettingsChange("discord.rpcClientId")
 	@OnSettingsChange("discord.rpcClientSecret")
-	@OnIpc("logged-out")
+	@OnEvent("logged-out")
 	clearAccessToken() {
 		this.store.clear();
 	}
 
-	@OnIpc("set-bot-volume")
-	onSetBotVolume(volume: number, id: string) {
+	@OnCommand("set-bot-volume")
+	onSetBotVolume({ volume, id }: IpcCommandData<"set-bot-volume">) {
 		if (!this.client) return;
 		this.client.setUserVoiceSettings(id, {
 			id,
@@ -106,8 +106,8 @@ export class RPC extends Process {
 		});
 	}
 
-	@OnIpc("authenticate-rpc")
-	async onAuthenticateRPC(clientId: string, clientSecret: string) {
+	@OnCommand("authenticate-rpc")
+	async onAuthenticateRPC({ clientId, clientSecret }: IpcCommandData<"authenticate-rpc">) {
 		await this.connect(clientId, clientSecret);
 	}
 }

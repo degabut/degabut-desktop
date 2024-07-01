@@ -1,8 +1,8 @@
 import { BrowserWindow, globalShortcut, shell } from "electron";
 import * as path from "path";
-import { IPCListener, OnIpc, OnSettingsChange, Window } from "./common";
+import { IPCListener, OnEvent, OnIpc, OnSettingsChange, Window } from "./common";
 import { config } from "./config";
-import { Settings } from "./types";
+import { IpcClientEventData, IpcInternalEvents } from "./types";
 
 @IPCListener
 class OverlayWindow extends Window {
@@ -20,6 +20,7 @@ class OverlayWindow extends Window {
 			fullscreen: true,
 			skipTaskbar: true,
 			alwaysOnTop: true,
+			minimizable: false,
 			frame: false,
 			show: false,
 			resizable: false,
@@ -28,11 +29,9 @@ class OverlayWindow extends Window {
 		this.window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 		this.window.setAlwaysOnTop(true, "screen-saver", 1);
 		this.window.setFullScreenable(false);
+		this.window.setIgnoreMouseEvents(true);
 
-		this.window.on("blur", () => {
-			this.closeOverlay();
-			this.isOverlayClosed = true;
-		});
+		this.window.on("blur", () => this.closeOverlay());
 
 		this.window.webContents.setWindowOpenHandler(({ url }) => {
 			shell.openExternal(url);
@@ -49,20 +48,26 @@ class OverlayWindow extends Window {
 
 	// #region IPC
 	@OnIpc("main-window-loaded")
+	@OnEvent("authenticated")
 	onMainWindowLoaded() {
 		this.window.webContents.reload();
 	}
 
-	@OnIpc("loaded")
-	onLoaded(settings?: Settings) {
+	@OnIpc("main-window-focus-state-change")
+	onMainWindowFocusStateChange(isFocused: IpcInternalEvents["main-window-focus-state-change"]) {
+		this.send("main-window-focus-state-change", isFocused);
+	}
+
+	@OnEvent("ready")
+	onLoaded(settings?: IpcClientEventData<"ready">) {
 		if (!settings) return;
 		if (settings["overlay.enabled"]) this.onOverlayToggled(settings["overlay.enabled"]);
 		if (settings["overlay.shortcut"]) this.onOverlayShortcutChanged(settings["overlay.shortcut"]);
 	}
 
-	@OnIpc("authenticated")
-	onAuthenticated() {
-		this.window.webContents.reload();
+	@OnEvent("overlay-ready")
+	onActivateOverlay() {
+		this.window.show();
 	}
 
 	@OnSettingsChange("overlay.enabled")
@@ -93,7 +98,11 @@ class OverlayWindow extends Window {
 		}
 
 		if (this.isEnabled) {
-			globalShortcut.register(shortcut, () => this.toggleOverlay());
+			try {
+				globalShortcut.register(shortcut, () => this.toggleOverlay());
+			} catch {
+				// TODO handle
+			}
 		}
 		this.currentShortcut = shortcut;
 	}
@@ -106,16 +115,16 @@ class OverlayWindow extends Window {
 
 	private openOverlay() {
 		globalShortcut.register("Esc", () => this.closeOverlay());
-		this.window.show();
-		this.window.restore();
+		this.send("overlay-active-state-change", true);
+		this.window.setIgnoreMouseEvents(false);
 		this.isOverlayClosed = false;
 	}
 
 	private closeOverlay() {
 		if (this.window.isDestroyed()) return;
+		this.send("overlay-active-state-change", false);
 		globalShortcut.unregister("Esc");
-		this.window.minimize();
-		this.window.hide();
+		this.window.setIgnoreMouseEvents(true);
 		this.isOverlayClosed = true;
 	}
 	// #endregion

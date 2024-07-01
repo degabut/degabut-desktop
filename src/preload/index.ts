@@ -1,45 +1,39 @@
-import type { Presence } from "discord-rpc";
 import { contextBridge, ipcRenderer } from "electron";
-
-interface DesktopAPI {
-	onAuthenticated: () => void;
-	onLoggedOut: () => void;
-	onSettingsChanged: (key: string, after: unknown, before: unknown) => void;
-
-	setActivity: (presence: Presence) => void;
-	clearActivity: () => void;
-	authenticateRpc: (clientId: string, clientSecret: string) => void;
-	setBotVolume: (volume: number, id: string) => void;
-
-	quitAndInstallUpdate: () => void;
-	handleUpdateDownloaded: (callback: () => void) => void;
-}
+import { DesktopAPI, IpcClientEvents, IpcCommandData, IpcCommands, IpcServerEventPayload } from "../types";
 
 const appVersion = process.argv.find((arg) => arg.startsWith("--desktop-app-version="))?.split("=")[1];
 const isMainWindow = process.argv.some((arg) => arg === "--main-window");
 
+const sendCommand = async <T extends keyof IpcCommands>(name: T, data?: IpcCommandData<T>) => {
+	return ipcRenderer.invoke("command", { name, data });
+};
+
+const sendEvent = <T extends keyof IpcClientEvents>(name: T, data: IpcClientEvents[T]) => {
+	ipcRenderer.send("event", { name, data });
+};
+
 contextBridge.exposeInMainWorld("IS_DESKTOP", true);
 contextBridge.exposeInMainWorld("DESKTOP_APP_VERSION", appVersion);
-
 contextBridge.exposeInMainWorld("desktopAPI", <DesktopAPI>{
-	onAuthenticated: () => ipcRenderer.send("authenticated"),
-	onLoggedOut: () => ipcRenderer.send("logged-out"),
-	onSettingsChanged: (...data: unknown[]) => ipcRenderer.send("settings-changed", ...data),
+	send: sendCommand,
+	emit: sendEvent,
+	on: (eventName: string, callback: (e: unknown) => void) => {
+		if (!listeners.has(eventName)) listeners.set(eventName, []);
+		listeners.get(eventName)?.push(callback);
+	},
+});
 
-	setActivity: (...data: unknown[]) => ipcRenderer.send("set-activity", ...data),
-	clearActivity: () => ipcRenderer.send("clear-activity"),
-	authenticateRpc: (...data: unknown[]) => ipcRenderer.send("authenticate-rpc", ...data),
-	setBotVolume: (...data: unknown[]) => ipcRenderer.send("set-bot-volume", ...data),
-
-	quitAndInstallUpdate: () => ipcRenderer.send("quit-and-install-update"),
-	handleUpdateDownloaded: (callback: () => void) => ipcRenderer.on("update-downloaded", callback),
+const listeners = new Map<string, ((e: unknown) => void)[]>();
+ipcRenderer.on("event", (_, e: IpcServerEventPayload) => {
+	const listener = listeners.get(e.name);
+	if (listener) listener.forEach((l) => l(e.data));
 });
 
 process.once("loaded", () => {
 	if (!isMainWindow) return;
 
 	const settings = localStorage.getItem("settings");
-	ipcRenderer.send("loaded", settings ? JSON.parse(settings) : null);
+	sendEvent("ready", settings ? JSON.parse(settings) : null);
 	let reloading = false;
 
 	window.addEventListener("load", () => {
@@ -49,7 +43,7 @@ process.once("loaded", () => {
 	document.addEventListener("keydown", (e) => {
 		if (e.key === "F5" && !reloading) {
 			reloading = true;
-			ipcRenderer.send("f5-pressed");
+			sendCommand("reload");
 		}
 	});
 

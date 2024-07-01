@@ -1,6 +1,6 @@
-import { BrowserWindow, app, autoUpdater, ipcMain, shell } from "electron";
+import { BrowserWindow, app, autoUpdater, shell } from "electron";
 import * as path from "path";
-import { IPCListener, OnIpc, Window } from "./common";
+import { IPCListener, OnCommand, Window } from "./common";
 import { config } from "./config";
 
 @IPCListener
@@ -32,9 +32,12 @@ class MainWindow extends Window {
 			event.returnValue = false;
 		});
 
+		this.window.on("focus", () => this.emit("main-window-focus-state-change", true));
+		this.window.on("blur", () => this.emit("main-window-focus-state-change", false));
+
 		this.window.webContents.on("did-finish-load", () => {
 			const url = this.window?.webContents.getURL();
-			if (url.startsWith(config.baseUrl)) ipcMain.emit("main-window-loaded");
+			if (url.startsWith(config.baseUrl)) this.emit("main-window-loaded");
 		});
 
 		this.window.webContents.setWindowOpenHandler(({ url }) => {
@@ -47,7 +50,7 @@ class MainWindow extends Window {
 		await this.window.loadURL(config.baseUrl);
 
 		autoUpdater.on("update-downloaded", () => {
-			this.window?.webContents.send("update-downloaded");
+			this.send("update-downloaded");
 		});
 	}
 
@@ -55,8 +58,8 @@ class MainWindow extends Window {
 		this.window?.destroy();
 	}
 
-	@OnIpc("f5-pressed")
-	onF5Pressed() {
+	@OnCommand("reload")
+	reload() {
 		this.window.webContents.reload();
 	}
 }

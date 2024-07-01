@@ -1,6 +1,6 @@
 import axios from "axios";
 import { app, autoUpdater } from "electron";
-import { IPCListener, OnIpc, Process } from "./common";
+import { IPCListener, OnCommand, Process } from "./common";
 import { config } from "./config";
 
 @IPCListener
@@ -20,7 +20,7 @@ class Updater extends Process {
 
 	destroy() {}
 
-	@OnIpc("quit-and-install-update")
+	@OnCommand("quit-and-install-update")
 	quitAndInstall() {
 		if (this.hasUpdate) autoUpdater.quitAndInstall();
 	}
