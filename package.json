@@ -1,7 +1,7 @@
 {
   "name": "degabut-desktop",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Degabut",
   "description": "Desktop Application for Degabut",
   "main": "./dist/index.js",
