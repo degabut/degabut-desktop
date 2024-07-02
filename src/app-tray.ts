@@ -8,7 +8,7 @@ class AppTray extends Process {
 	private tray!: Tray;
 
 	create() {
-		this.tray = new Tray(config.icon);
+		this.tray = new Tray(config.icon32);
 		this.tray.on("click", () => mainWindow?.window.show());
 		this.tray.setContextMenu(
 			Menu.buildFromTemplate([

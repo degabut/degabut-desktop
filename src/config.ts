@@ -25,7 +25,11 @@ class Config implements ConfigSchema {
 	}
 
 	get icon() {
-		return join(__dirname, "./assets/favicon-128x128.png");
+		return join(__dirname, "./assets/favicon.ico");
+	}
+
+	get icon32() {
+		return join(__dirname, "./assets/favicon-32x32.png");
 	}
 }
 
