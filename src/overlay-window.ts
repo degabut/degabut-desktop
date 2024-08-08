@@ -117,6 +117,7 @@ class OverlayWindow extends Window {
 		globalShortcut.register("Esc", () => this.closeOverlay());
 		this.send("overlay-active-state-change", true);
 		this.window.setIgnoreMouseEvents(false);
+		this.window.focus();
 		this.isOverlayClosed = false;
 	}
 
