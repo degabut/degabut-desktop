@@ -125,6 +125,7 @@ class OverlayWindow extends Window {
 		if (this.window.isDestroyed()) return;
 		this.send("overlay-active-state-change", false);
 		globalShortcut.unregister("Esc");
+		this.window.blur();
 		this.window.setIgnoreMouseEvents(true);
 		this.isOverlayClosed = true;
 	}
